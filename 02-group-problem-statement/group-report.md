@@ -230,16 +230,21 @@ phút" ngay từ bây giờ, trước khi cần bất kỳ quyền truy cập n�
 CURRENT STATE — 5 bước, 30-45 phút chờ vật lý/trò chơi vào giờ cao điểm
 
 [1 Khách chọn trò chơi và đi bộ tới: 5-10' - du khách]
-   (không có thông tin thời gian chờ khi còn ở xa)
+   (không có thông tin thời gian chờ khi còn ở xa)   <-- nguyên nhân gốc
 → [2 Tới chân trò chơi mới nhìn thấy hàng, ước lượng bằng mắt: 1-2' - du khách]
 → [3 Khách hỏi dồn nhân viên "bao lâu nữa tới lượt": 10-20 giây/lượt - ride operator]
    (nhân viên vừa vận hành vừa trả lời ước lượng cảm tính)
 → [4 Xếp hàng vật lý: 30-45' giờ cao điểm - du khách]   <-- bottleneck
-→ [5 Chơi xong, lặp lại từ bước 1 cho trò tiếp theo]
+→ [5 Chơi xong, lặp lại từ bước 1 cho trò tiếp theo: lặp 4-6 lần/ngày]
 
-Handoff yếu: thông tin về độ dài hàng chỉ tồn tại trong đầu nhân viên tại chỗ và
-trong mắt người đang đứng xếp hàng; không chảy ngược ra cho khách đang ở xa quyết
-định, cũng không chảy lên cho người điều phối toàn công viên cân bằng tải.
+Handoff yếu:
+Thông tin về độ dài hàng chỉ tồn tại trong đầu nhân viên tại chỗ và trong mắt người
+đang đứng xếp hàng. Nó KHÔNG chảy ngược ra cho khách đang ở xa quyết định, cũng
+KHÔNG chảy lên cho người điều phối toàn công viên cân bằng tải.
+
+Vòng lặp tốn công:
+Ở bước 2 khách có thể bỏ đi, nhưng lúc đó đã mất 5-10' đi bộ rồi — nên đa số tiếc
+công và vẫn xếp hàng.
 ```
 
 | Bước | Actor                          | Input                                  | Output                         | Thời gian / tần suất          | Ghi chú (handoff? bottleneck?)                                                   |
@@ -264,49 +269,73 @@ Bước 3 không phải bottleneck về thời gian nhưng là điểm rủi ro 
 phân tán khỏi việc vận hành trò chơi.
 ```
 
+**Bằng chứng cho chỗ "handoff đứt" — số thật từ Queue-Times (xem 4.1):**
+
+```text
+TOKYO DISNEYLAND — 31 trò đang mở, cùng MỘT thời điểm (14:41 giờ Tokyo, thứ Bảy)
+
+13 trò chờ ≤ 10'   ████████████████████████░░░░░░░░░░░░░░░░  gần như trống
+ 7 trò chờ 15-25'  █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░
+11 trò chờ ≥ 30'   ████████████████████░░░░░░░░░░░░░░░░░░░░  cao nhất 100'
+
+median 15'  |  trung bình 25,5'  |  thấp nhất 0'  |  cao nhất 100'
+→ chênh lệch 6-7 LẦN giữa trò đông nhất và trò vắng nhất, TẠI CÙNG MỘT LÚC
+
+HONG KONG DISNEYLAND cùng thời điểm: 0-60', trung bình 26'
+```
+
+Kết luận rút ra: ngay cạnh mỗi điểm nóng luôn có một trò vắng. Khách không thiếu chỗ chơi — khách thiếu **thông tin để nhìn thấy chỗ vắng đó**. Đây chính là chỗ bước 1 của Current State bị hỏng.
+
 ### 5.2. Future workflow bản nhóm
 
 Phải nhìn ra 5 thứ: bước nào máy (Rule), bước nào AI, bước nào người, boundary ở đâu, fallback khi AI sai.
 
 ```text
-FUTURE STATE — mục tiêu chờ vật lý dưới 10-12 phút tại trò chơi áp dụng vé ảo
+FUTURE STATE — 5 bước, mục tiêu chờ vật lý dưới 10-12' tại trò áp dụng vé ảo
 
-[1 Đếm người trong hàng bằng camera (ẩn danh) + lấy dữ liệu vé, lịch show, thời tiết:
-   liên tục - máy/rule]
-→ [2 AI dự báo thời gian chờ động cho từng trò chơi: cập nhật mỗi 5' - AI]
-→ [3 Rule hiển thị: đẩy wait time lên app + màn hình LED tại ngã rẽ chính;
-   nếu wait vượt ngưỡng thì mở vé ảo và gợi ý trò chơi vắng hơn: tức thì - rule]
-→ [4 Nhân viên điều phối xác nhận, ghi đè hoặc tắt hiển thị khi có sự cố/thời tiết:
-   khi cần - người]  <-- human boundary
+[1 Đếm người trong hàng bằng camera ẩn danh + lấy dữ liệu vé,
+   lịch show, thời tiết: liên tục]                          -- Rule/máy
+→ [2 Dự báo thời gian chờ động cho từng trò: cập nhật mỗi 5']  -- AI (việc duy nhất)
+→ [3a Đẩy wait time lên app + màn hình LED tại ngã rẽ chính]   -- Rule
+   [3b Nếu wait vượt ngưỡng → mở vé ảo + gợi ý trò vắng hơn]   -- Rule (ngưỡng do người đặt)
+→ [4 Nhân viên điều phối xác nhận, ghi đè hoặc TẮT hiển thị
+   khi có sự cố/thời tiết: khi cần]                          -- Human boundary
 → [5 Khách quay lại theo khung giờ vé ảo, chờ vật lý dưới 10-12']
 
 Boundary:
 - AI chỉ ước lượng thời gian chờ và gợi ý phân luồng.
-- AI KHÔNG quyết định cho trò chơi chạy hay dừng (an toàn cơ học, thời tiết là quyền
-  của kỹ sư vận hành), KHÔNG từ chối khách, KHÔNG nhận diện khuôn mặt — camera chỉ
-  đếm số người một cách ẩn danh.
+- AI KHÔNG quyết định cho trò chơi chạy hay dừng — an toàn cơ học và thời tiết là
+  quyền của kỹ sư vận hành.
+- AI KHÔNG từ chối khách, KHÔNG tự đổi lịch show.
+- AI KHÔNG nhận diện khuôn mặt và không lưu ảnh cá nhân — camera chỉ ĐẾM ẩn danh.
+- KHÔNG hứa tăng công suất: hệ thống phân phối lại thời gian chờ, không tạo thêm chỗ.
 
-Fallback:
-- Nếu camera lỗi hoặc sai số dự báo vượt ngưỡng 2 chu kỳ liên tiếp → app hiện "đang
-  cập nhật" và quay về cách cũ: nhân viên nhập thời gian chờ bằng tay mỗi 15 phút.
-- Nếu hệ thống vé ảo trục trặc → đóng vé ảo, mọi khách quay lại xếp hàng thường,
-  không ai bị mất lượt.
+Fallback (đường hạ cấp, mỗi mức vẫn chạy được):
+- Sai số dự báo vượt ngưỡng 2 chu kỳ liên tiếp → tự động ẩn số dự báo, app hiện
+  "đang cập nhật", quay về nhân viên nhập thời gian chờ bằng tay mỗi 15'.
+- Camera lỗi hoặc có khiếu nại riêng tư → dừng thu hình, đếm bằng cảm biến không ghi
+  hình hoặc đếm tay; vẫn giữ được lớp hiển thị.
+- Hệ thống vé ảo trục trặc → đóng vé ảo, mọi khách quay lại xếp hàng thường,
+  KHÔNG AI BỊ MẤT LƯỢT.
+- Nhân viên điều phối có quyền ghi đè hoặc tắt hiển thị ngay tại chỗ, bất kỳ lúc nào.
 
 Bottleneck mới:
-Bước 4 — thông lượng thật của trò chơi (bao nhiêu khách/giờ) không đổi. AI chỉ phân
+Bước 4 — thông lượng thật của trò chơi (bao nhiêu khách/giờ) KHÔNG đổi. AI chỉ phân
 phối lại thời gian chờ chứ không tạo thêm chỗ, nên phải nói thẳng điều này để không
-hứa quá.
+hứa quá với khách.
 ```
 
 **Before/after impact:**
 
-| Metric                                    |                                               Trước |                                                                                             Sau kỳ vọng | Cách đo                                                                  |
-| ----------------------------------------- | --------------------------------------------------: | ------------------------------------------------------------------------------------------------------: | ------------------------------------------------------------------------ |
-| Thời gian chờ vật lý tại trò chơi áp dụng |                30-45 phút (ước lượng, chưa bấm giờ) |                                                                                         Dưới 10-12 phút | Bấm giờ mẫu 30 khách/ngày trong 3 ngày cao điểm, trước và sau            |
-| Khách biết thời gian chờ trước khi đi tới |                                               Không |                                                                               Có, trên app + LED ngã rẽ | Khảo sát 30 khách: "bạn biết trước khi đi tới hay chỉ biết khi đến nơi?" |
-| Sai số dự báo thời gian chờ (MAE)         | Ước lượng cảm tính của nhân viên, chưa ai đo sai số |                                                                                             Dưới 5 phút | So con số hiển thị với thời gian chờ thật bấm giờ được                   |
-| Số lượt khách hỏi nhân viên "bao lâu nữa" |                                   Liên tục trong ca |                                                                                             Giảm rõ rệt | Nhân viên đếm tay trong 2 ca trước và 2 ca sau                           |
-| Risk mới                                  |                                            Không có | Khách tin con số sai rồi bỏ lỡ show; camera đếm người gây lo ngại riêng tư; vé ảo tạo cảm giác bất công | Đếm số khiếu nại liên quan đến sai giờ và vé ảo                          |
+| Metric                                             |                                               Trước |                                                                                             Sau kỳ vọng | Cách đo                                                                  |
+| -------------------------------------------------- | --------------------------------------------------: | ------------------------------------------------------------------------------------------------------: | ------------------------------------------------------------------------ |
+| Thời gian chờ vật lý tại trò áp dụng               | 30-45 phút _(nhóm trò hot; ước lượng chưa bấm giờ)_ |                                                                                         Dưới 10-12 phút | Bấm giờ mẫu 30 khách/ngày trong 3 ngày cao điểm, trước và sau            |
+| Khách biết wait time **trước khi** đi tới          |                                                 ~0% |                                                                                                Trên 70% | Khảo sát 30 khách: "bạn biết trước khi đi tới hay chỉ biết khi đến nơi?" |
+| Sai số dự báo (MAE) — _metric AI chịu trách nhiệm_ | Ước lượng cảm tính của nhân viên, chưa ai đo sai số |                                                                                             Dưới 5 phút | So con số hiển thị với thời gian chờ thật bấm giờ được                   |
+| Số lượt khách hỏi nhân viên "bao lâu nữa"          |                                   Liên tục trong ca |                                                                                             Giảm rõ rệt | Nhân viên đếm tay trong 2 ca trước và 2 ca sau                           |
+| Số bước thủ công                                   |                                                 5/5 |                                                                 1/5 _(chỉ bước 4 — nhân viên xác nhận)_ | Đếm trên workflow                                                        |
+| Bottleneck chính                                   |                            Xếp hàng vật lý (bước 4) |                                                                           Thông lượng thật của trò chơi | Bottleneck mới KHÔNG giải được bằng AI                                   |
+| Risk mới                                           |                                            Không có | Khách tin con số sai rồi bỏ lỡ show; camera đếm người gây lo ngại riêng tư; vé ảo tạo cảm giác bất công | Đếm số khiếu nại liên quan đến sai giờ và vé ảo                          |
 
 ### 5.3. Problem Statement v0 (mỗi field 2-3 câu)
 
@@ -365,6 +394,26 @@ không phải một Agent cần tự xoay xở.
 3. **Có thật sự cần Agent tự lập kế hoạch + gọi tool không?** Không. Các bước và nguồn dữ liệu đều cố định và biết trước. Cho agent quyền tự đổi lịch show hay tự điều hướng khách là mở rộng phạm vi sang vận hành và an toàn, trong khi giá trị tăng thêm chưa được chứng minh.
 4. **Nếu AI sai, ai phát hiện đầu tiên và sửa trong bao lâu?** Khách phát hiện đầu tiên và phát hiện rất nhanh — app báo 10 phút mà chờ 40 phút thì họ biết ngay, nhưng lúc đó thiệt hại đã xảy ra. Vì vậy hệ thống phải tự giám sát sai số bằng cách đối chiếu dự báo với thời gian chờ thật liên tục, và nhân viên điều phối có quyền ghi đè hoặc tắt hiển thị ngay tại chỗ.
 5. **Có hạ được từ Agent → Workflow → Rule không?** Có, và đường hạ cấp rất sạch: bỏ mô hình dự báo thì vẫn còn camera đếm người cho con số thô; bỏ luôn camera thì quay về nhân viên nhập tay mỗi 15 phút — tức là quay về đúng mức Rule mà vẫn giữ được phần lớn giá trị thông tin cho khách.
+
+**Cây quyết định rút gọn từ 5 câu hỏi trên:**
+
+```text
+[Rule có giải được 70-80% case không?]
+   → RẤT CÓ THỂ. Tokyo & HK Disneyland đã công bố wait time bằng Rule.
+   → Rule = LỚP NỀN BẮT BUỘC, phải triển khai trước.
+        ↓
+[Các bước có đi thẳng một đường không?]
+   → ĐI THẲNG: đếm → dự báo → hiển thị → người xác nhận.
+   → Nhánh duy nhất là "wait có vượt ngưỡng mở vé ảo không" — ngưỡng do NGƯỜI đặt.
+        ↓
+[AI có phải tự lập kế hoạch và tự chọn tool không?]
+   → KHÔNG. Nguồn dữ liệu và thứ tự bước đều cố định, biết trước.
+        ↓
+   ==> CHỌN: WORKFLOW, đặt trên nền một lớp Rule bắt buộc.
+
+   ==> KHÔNG chọn AGENT: chạm vào vận hành và an toàn của cả công viên, một quyết
+       định sai lan ra hàng nghìn khách, rất khó giải thích khi có sự cố.
+```
 
 **Mức chọn:**
 
